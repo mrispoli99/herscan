@@ -1,0 +1,73 @@
+import pandas as pd
+
+def get_cleveland_zips():
+    data = [
+        # --- CUYAHOGA COUNTY (30 ZIPS) ---
+        {"Zip": "44139", "City": "Solon", "County": "Cuyahoga", "Income": 134900, "Women_45plus": 4800, "Lat": 41.38, "Lon": -81.44},
+        {"Zip": "44040", "City": "Gates Mills", "County": "Cuyahoga", "Income": 166500, "Women_45plus": 1200, "Lat": 41.52, "Lon": -81.40},
+        {"Zip": "44140", "City": "Bay Village", "County": "Cuyahoga", "Income": 122100, "Women_45plus": 3500, "Lat": 41.48, "Lon": -81.93},
+        {"Zip": "44149", "City": "Strongsville", "County": "Cuyahoga", "Income": 114100, "Women_45plus": 6300, "Lat": 41.31, "Lon": -81.83},
+        {"Zip": "44122", "City": "Beachwood", "County": "Cuyahoga", "Income": 97500, "Women_45plus": 6200, "Lat": 41.46, "Lon": -81.54},
+        {"Zip": "44145", "City": "Westlake", "County": "Cuyahoga", "Income": 110100, "Women_45plus": 5100, "Lat": 41.45, "Lon": -81.93},
+        {"Zip": "44147", "City": "Brecksville", "County": "Cuyahoga", "Income": 118400, "Women_45plus": 3200, "Lat": 41.30, "Lon": -81.61},
+        {"Zip": "44141", "City": "Broadview Hts", "County": "Cuyahoga", "Income": 112500, "Women_45plus": 2900, "Lat": 41.32, "Lon": -81.68},
+        {"Zip": "44131", "City": "Independence", "County": "Cuyahoga", "Income": 98800, "Women_45plus": 4100, "Lat": 41.39, "Lon": -81.64},
+        {"Zip": "44116", "City": "Rocky River", "County": "Cuyahoga", "Income": 96200, "Women_45plus": 4900, "Lat": 41.47, "Lon": -81.85},
+        {"Zip": "44143", "City": "Mayfield Village", "County": "Cuyahoga", "Income": 85400, "Women_45plus": 5400, "Lat": 41.54, "Lon": -81.44},
+        {"Zip": "44124", "City": "Lyndhurst", "County": "Cuyahoga", "Income": 99200, "Women_45plus": 5800, "Lat": 41.52, "Lon": -81.45},
+        {"Zip": "44142", "City": "Brook Park", "County": "Cuyahoga", "Income": 68500, "Women_45plus": 3800, "Lat": 41.40, "Lon": -81.82},
+        {"Zip": "44133", "City": "North Royalton", "County": "Cuyahoga", "Income": 84200, "Women_45plus": 6100, "Lat": 41.31, "Lon": -81.74},
+        {"Zip": "44136", "City": "Strongsville South", "County": "Cuyahoga", "Income": 92100, "Women_45plus": 4200, "Lat": 41.30, "Lon": -81.83},
+        {"Zip": "44130", "City": "Parma Heights", "County": "Cuyahoga", "Income": 62400, "Women_45plus": 7100, "Lat": 41.38, "Lon": -81.76},
+        {"Zip": "44129", "City": "Parma", "County": "Cuyahoga", "Income": 65100, "Women_45plus": 6800, "Lat": 41.40, "Lon": -81.73},
+        {"Zip": "44118", "City": "Cleveland Hts", "County": "Cuyahoga", "Income": 82300, "Women_45plus": 5200, "Lat": 41.52, "Lon": -81.57},
+        {"Zip": "44107", "City": "Lakewood", "County": "Cuyahoga", "Income": 64800, "Women_45plus": 7500, "Lat": 41.49, "Lon": -81.77},
+        {"Zip": "44121", "City": "South Euclid", "County": "Cuyahoga", "Income": 71200, "Women_45plus": 5400, "Lat": 41.53, "Lon": -81.54},
+        {"Zip": "44120", "City": "Shaker Heights", "County": "Cuyahoga", "Income": 98500, "Women_45plus": 4800, "Lat": 41.48, "Lon": -81.59},
+        {"Zip": "44126", "City": "Fairview Park", "County": "Cuyahoga", "Income": 78900, "Women_45plus": 3100, "Lat": 41.45, "Lon": -81.84},
+        {"Zip": "44146", "City": "Bedford", "County": "Cuyahoga", "Income": 61500, "Women_45plus": 4400, "Lat": 41.40, "Lon": -81.53},
+        {"Zip": "44117", "City": "Euclid", "County": "Cuyahoga", "Income": 52300, "Women_45plus": 3900, "Lat": 41.56, "Lon": -81.54},
+        {"Zip": "44132", "City": "Euclid North", "County": "Cuyahoga", "Income": 54800, "Women_45plus": 4100, "Lat": 41.62, "Lon": -81.52},
+        {"Zip": "44119", "City": "Cleveland NE", "County": "Cuyahoga", "Income": 48900, "Women_45plus": 3200, "Lat": 41.59, "Lon": -81.55},
+        {"Zip": "44125", "City": "Garfield Hts", "County": "Cuyahoga", "Income": 51200, "Women_45plus": 4800, "Lat": 41.41, "Lon": -81.60},
+        {"Zip": "44134", "City": "Parma East", "County": "Cuyahoga", "Income": 63400, "Women_45plus": 5100, "Lat": 41.39, "Lon": -81.69},
+        {"Zip": "44135", "City": "Riverside", "County": "Cuyahoga", "Income": 52100, "Women_45plus": 3800, "Lat": 41.43, "Lon": -81.81},
+        {"Zip": "44137", "City": "Maple Heights", "County": "Cuyahoga", "Income": 49800, "Women_45plus": 4200, "Lat": 41.41, "Lon": -81.56},
+
+        # --- LORAIN COUNTY (10 ZIPS) ---
+        {"Zip": "44011", "City": "Avon", "County": "Lorain", "Income": 126600, "Women_45plus": 4200, "Lat": 41.45, "Lon": -82.02},
+        {"Zip": "44012", "City": "Avon Lake", "County": "Lorain", "Income": 110200, "Women_45plus": 4500, "Lat": 41.50, "Lon": -82.01},
+        {"Zip": "44039", "City": "North Ridgeville", "County": "Lorain", "Income": 94100, "Women_45plus": 5200, "Lat": 41.39, "Lon": -82.01},
+        {"Zip": "44001", "City": "Amherst", "County": "Lorain", "Income": 78200, "Women_45plus": 4100, "Lat": 41.40, "Lon": -82.22},
+        {"Zip": "44035", "City": "Elyria", "County": "Lorain", "Income": 58400, "Women_45plus": 6800, "Lat": 41.37, "Lon": -82.11},
+        {"Zip": "44052", "City": "Lorain West", "County": "Lorain", "Income": 51200, "Women_45plus": 5900, "Lat": 41.46, "Lon": -82.18},
+        {"Zip": "44053", "City": "Lorain South", "County": "Lorain", "Income": 53400, "Women_45plus": 4200, "Lat": 41.42, "Lon": -82.22},
+        {"Zip": "44054", "City": "Sheffield Lake", "County": "Lorain", "Income": 68900, "Women_45plus": 3100, "Lat": 41.49, "Lon": -82.10},
+        {"Zip": "44074", "City": "Oberlin", "County": "Lorain", "Income": 62500, "Women_45plus": 2800, "Lat": 41.29, "Lon": -82.22},
+        {"Zip": "44044", "City": "Grafton", "County": "Lorain", "Income": 85600, "Women_45plus": 2900, "Lat": 41.27, "Lon": -82.05},
+
+        # --- LAKE COUNTY (10 ZIPS) ---
+        {"Zip": "44060", "City": "Mentor", "County": "Lake", "Income": 81200, "Women_45plus": 7200, "Lat": 41.67, "Lon": -81.34},
+        {"Zip": "44094", "City": "Willoughby", "County": "Lake", "Income": 72400, "Women_45plus": 5400, "Lat": 41.62, "Lon": -81.44},
+        {"Zip": "44077", "City": "Painesville", "County": "Lake", "Income": 89500, "Women_45plus": 5900, "Lat": 41.72, "Lon": -81.25},
+        {"Zip": "44081", "City": "Kirtland", "County": "Lake", "Income": 105200, "Women_45plus": 2800, "Lat": 41.60, "Lon": -81.34},
+        {"Zip": "44045", "City": "Grand River", "County": "Lake", "Income": 68400, "Women_45plus": 800, "Lat": 41.73, "Lon": -81.28},
+        {"Zip": "44057", "City": "Madison", "County": "Lake", "Income": 74200, "Women_45plus": 3900, "Lat": 41.77, "Lon": -81.05},
+        {"Zip": "44086", "City": "Perry", "County": "Lake", "Income": 81500, "Women_45plus": 1900, "Lat": 41.75, "Lon": -81.14},
+        {"Zip": "44092", "City": "Wickliffe", "County": "Lake", "Income": 66400, "Women_45plus": 3200, "Lat": 41.61, "Lon": -81.47},
+        {"Zip": "44095", "City": "Willowick", "County": "Lake", "Income": 69200, "Women_45plus": 3400, "Lat": 41.64, "Lon": -81.45},
+        {"Zip": "44024", "City": "Chardon", "County": "Lake", "Income": 104800, "Women_45plus": 2100, "Lat": 41.58, "Lon": -81.20},
+
+        # --- MEDINA COUNTY (10 ZIPS) ---
+        {"Zip": "44256", "City": "Medina", "County": "Medina", "Income": 100300, "Women_45plus": 6500, "Lat": 41.14, "Lon": -81.86},
+        {"Zip": "44212", "City": "Brunswick", "County": "Medina", "Income": 82500, "Women_45plus": 6100, "Lat": 41.24, "Lon": -81.84},
+        {"Zip": "44281", "City": "Wadsworth", "County": "Medina", "Income": 79400, "Women_45plus": 5300, "Lat": 41.03, "Lon": -81.73},
+        {"Zip": "44233", "City": "Hinckley", "County": "Medina", "Income": 138200, "Women_45plus": 2200, "Lat": 41.24, "Lon": -81.74},
+        {"Zip": "44215", "City": "Chippewa Lake", "County": "Medina", "Income": 76500, "Women_45plus": 1100, "Lat": 41.06, "Lon": -81.91},
+        {"Zip": "44254", "City": "Lodi", "County": "Medina", "Income": 61200, "Women_45plus": 2400, "Lat": 41.03, "Lon": -82.01},
+        {"Zip": "44273", "City": "Seville", "County": "Medina", "Income": 78400, "Women_45plus": 1800, "Lat": 41.01, "Lon": -81.86},
+        {"Zip": "44274", "City": "Sharon Center", "County": "Medina", "Income": 115200, "Women_45plus": 1400, "Lat": 41.11, "Lon": -81.74},
+        {"Zip": "44275", "City": "Spencer", "County": "Medina", "Income": 68900, "Women_45plus": 1100, "Lat": 41.10, "Lon": -82.11},
+        {"Zip": "44280", "City": "Valley City", "County": "Medina", "Income": 98400, "Women_45plus": 1600, "Lat": 41.24, "Lon": -81.93},
+    ]
+    return pd.DataFrame(data)
