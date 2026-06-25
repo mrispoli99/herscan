@@ -145,104 +145,104 @@ def working_days_for(t):
     while len(wd) < dpw: wd.append(WEEKDAYS[len(wd)])      # pad if needed
     return wd
 
-def schedule_year(asg, techs, drive, df, weeks=52, coords=None, min_sep_miles=10, fixed=None):
+def schedule_year(asg, techs, drive, df, weeks=52, coords=None, min_sep_miles=10, fixed=None, area_window_weeks=3):
+    """Place a year of events. Spacing rule: any two events within `min_sep_miles` of each other
+    must be at least `area_window_weeks` weeks apart (across all techs), so a local audience isn't
+    re-hit too soon. Booked/pinned events are fixed and never moved."""
     names = [t["name"] for t in techs]
     wdays = {t["name"]: working_days_for(t) for t in techs}
-    fingerprint = {}
     fixed = fixed or {}
+    W = max(1, int(area_window_weeks))
     pinned_zips = {fz for lst in fixed.values() for (_w,_d,fz,_l) in lst if isinstance(fz, str)}
-    fp_zips = set(asg["zip"]) | (pinned_zips & set().union(*[set(drive[n].keys()) for n in names]))
-    fingerprint.update({z: np.array([drive[n].get(z, 999) for n in names], float) for z in fp_zips})
+    avail = set().union(*[set(drive[n].keys()) for n in names]) if names else set()
+    fp_zips = set(asg["zip"]) | (pinned_zips & avail)
+    fingerprint = {z: np.array([drive[n].get(z, 999) for n in names], float) for z in fp_zips}
     def gd(a, b):
         if a not in fingerprint or b not in fingerprint: return 999.0
         return float(np.linalg.norm(fingerprint[a]-fingerprint[b]))
     def too_close(a, b):
-        if not isinstance(a, str) or not isinstance(b, str): return False
+        if not isinstance(a, str) or not isinstance(b, str) or a == b: return False
         if coords and a in coords and b in coords:
             return _haversine_miles(coords[a], coords[b]) < min_sep_miles
         return gd(a, b) < 8
-    grids = {}
+
+    # adjacency: zips within the buffer of each other
+    zlist = sorted(fp_zips)
+    neighbors = {z: [] for z in zlist}
+    for i in range(len(zlist)):
+        for j in range(i+1, len(zlist)):
+            if too_close(zlist[i], zlist[j]):
+                neighbors[zlist[i]].append(zlist[j]); neighbors[zlist[j]].append(zlist[i])
+    neighbor_busy = {z: set() for z in zlist}          # weeks in which a NEIGHBOR of z is scheduled
+    def mark(z, w):                                     # record that z occupies week w
+        for zn in neighbors.get(z, ()): neighbor_busy[zn].add(w)
+    def area_ok(z, w):                                  # is week w clear of nearby events within W weeks?
+        busy = neighbor_busy.get(z)
+        return not busy or all(abs(w-wb) >= W for wb in busy)
+
+    # ---- 1) pre-load all pinned (booked) events first, globally ----
+    pinned = {n: {} for n in names}; fixed_count = {n: {} for n in names}
+    capw = {}
     for n in names:
-        s = asg[asg.tech == n].sort_values("visits_yr", ascending=False)
         base_days = wdays[n]; slots = len(base_days)
-        # ---- pinned bookings: {week: {weekday: zip}} (weekday may be outside base_days, e.g. a Friday private event)
-        pinned = {}; fixed_count = {}
         for (fw, fwd, fz, _lbl) in fixed.get(n, []):
             if 0 <= fw < weeks:
-                pinned.setdefault(int(fw), {})[fwd] = fz
-                fixed_count[fz] = fixed_count.get(fz, 0) + 1
-        # open base-day capacity per week = base slots minus pins that land on a base day
-        capw = []
-        for w in range(weeks):
-            used_base = sum(1 for d in pinned.get(w, {}) if d in base_days)
-            capw.append(slots - used_base)
-        # ---- distribute each town's remaining annual visits into open weeks
-        wk = [[] for _ in range(weeks)]; phase = 0.0
+                pinned[n].setdefault(int(fw), {})[fwd] = fz
+                fixed_count[n][fz] = fixed_count[n].get(fz, 0) + 1
+                if isinstance(fz, str): mark(fz, int(fw))
+        capw[n] = [slots - sum(1 for d in pinned[n].get(w, {}) if d in base_days) for w in range(weeks)]
+
+    # ---- 2) distribute each town's remaining visits, honoring the area-window globally ----
+    wk = {n: [[] for _ in range(weeks)] for n in names}
+    for n in names:
+        s = asg[asg.tech == n].sort_values("visits_yr", ascending=False)
+        phase = 0.0
         for _, r in s.iterrows():
-            z = r["zip"]; V = int(r["visits_yr"]) - fixed_count.get(r["zip"], 0)
+            z = r["zip"]; V = int(r["visits_yr"]) - fixed_count[n].get(r["zip"], 0)
             if V <= 0: continue
             step = weeks/V
             targets = [int((i+0.5)*step+phase) % weeks for i in range(V)]
             phase = (phase+step/2) % weeks
             for t in targets:
-                placed = False
-                for w in sorted(range(weeks), key=lambda w: (abs(w-t), w)):
-                    if capw[w] > 0 and z not in wk[w] and z not in pinned.get(w, {}).values():
-                        capw[w] -= 1; wk[w].append(z); placed = True; break
-        # ---- assemble each week: pins on their weekday + routed towns on remaining base days
-        grid = []
+                order = sorted(range(weeks), key=lambda w: (abs(w-t), w))
+                def usable(w): return capw[n][w] > 0 and z not in wk[n][w] and z not in pinned[n].get(w, {}).values()
+                pick = next((w for w in order if usable(w) and area_ok(z, w)), None)   # prefer spaced weeks
+                if pick is None:
+                    pick = next((w for w in order if usable(w)), None)                 # fall back (residual)
+                if pick is not None:
+                    capw[n][pick] -= 1; wk[n][pick].append(z); mark(z, pick)
+
+    # ---- 3) assemble weeks: route towns onto open days, overlay pins ----
+    grids = {}
+    for n in names:
+        base_days = wdays[n]; grid = []
         for w in range(weeks):
-            pins = pinned.get(w, {})
+            pins = pinned[n].get(w, {})
             open_days = [d for d in base_days if d not in pins]
-            towns = sorted(wk[w], key=lambda z: drive[n][z])
+            towns = sorted(wk[n][w], key=lambda z: drive[n][z])
             route = [towns.pop(0)] if towns else []
             while towns:
                 nx_ = min(towns, key=lambda z: gd(route[-1], z)); towns.remove(nx_); route.append(nx_)
             day_map = {d: None for d in base_days}
             for i, d in enumerate(open_days):
                 day_map[d] = route[i] if i < len(route) else None
-            for fwd, fz in pins.items():        # overlay pins (can add an extra weekday like Fri)
+            for fwd, fz in pins.items():
                 day_map[fwd] = fz
             grid.append(day_map)
         grids[n] = grid
 
-    # same-day (same weekday) cross-tech de-confliction — never move a pinned booking
-    pinned_slots = {n: {(int(fw), fwd) for (fw, fwd, _z, _l) in fixed.get(n, [])} for n in names}
-    allwd = sorted({d for n in names for w in range(weeks) for d in grids[n][w]}, key=lambda d: WEEKDAYS.index(d) if d in WEEKDAYS else 99)
-    def day_towns(w, day): return [grids[m][w].get(day) for m in names if isinstance(grids[m][w].get(day), str)]
-    def try_move(n, w, day):
-        if (w, day) in pinned_slots[n]: return False     # don't move a booked event
-        town = grids[n][w].get(day)
-        if not town: return False
-        for d2 in grids[n][w]:
-            if d2 == day or (w, d2) in pinned_slots[n]: continue
-            cur = grids[n][w].get(d2)
-            if cur is None and all(not too_close(town, t) for t in day_towns(w, d2)):
-                grids[n][w][d2] = town; grids[n][w][day] = None; return True
-            if cur and all(not too_close(town, t) for t in day_towns(w, d2) if t != cur) \
-                    and all(not too_close(cur, t) for t in day_towns(w, day) if t != town):
-                grids[n][w][day], grids[n][w][d2] = cur, town; return True
-        return False
-    for w in range(weeks):
-        for _ in range(8):
-            moved = False
-            for day in allwd:
-                present = [(n, grids[n][w].get(day)) for n in names if grids[n][w].get(day)]
-                for i in range(len(present)):
-                    for j in range(i+1, len(present)):
-                        if too_close(present[i][1], present[j][1]):
-                            if try_move(present[j][0], w, day) or try_move(present[i][0], w, day): moved = True
-                            break
-                    if moved: break
-                if moved: break
-            if not moved: break
+    # ---- residual: how many events still have a nearby event within W weeks (lower is better) ----
+    by_zip = {}
+    for n in names:
+        for w in range(weeks):
+            for z in grids[n][w].values():
+                if isinstance(z, str): by_zip.setdefault(z, []).append(w)
     conflicts = 0
-    for w in range(weeks):
-        for day in allwd:
-            pres = day_towns(w, day)
-            for i in range(len(pres)):
-                for j in range(i+1, len(pres)):
-                    if too_close(pres[i], pres[j]): conflicts += 1
+    for z, ws in by_zip.items():
+        nb = neighbors.get(z, ())
+        for w in ws:
+            if any(any(abs(w-w2) < W for w2 in by_zip.get(zn, ())) for zn in nb):
+                conflicts += 1
     return grids, wdays, conflicts
 
 # ----------------------------- metrics -----------------------------
