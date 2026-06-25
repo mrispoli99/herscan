@@ -89,7 +89,7 @@ def build_workbook(path, asg, techs, grids, wdays, config, mets, df, names_map=N
                         dm=bk.get('dm'); dm=drive_by[n].get(z) if dm is None else dm
                         dtxt=f"{int(dm)}m" if dm is not None else 'local'
                         far=' ⚠far' if (dm is not None and dm>=90) else ''
-                        _c(ws,rr,3+i,f"{NAME.get(z,bk['label'])}{far}\n{bk.get('wkday','')} {bk['date']} · BOOKED · {dtxt}",
+                        _c(ws,rr,3+i,f"{NAME.get(z,bk['label'])}{far}\n{z} · {bk.get('wkday','')} {bk['date']} · BOOKED · {dtxt}",
                            sz=8,bold=True,bg=BOOKED,align='center',wrap=True)
                     continue
                 dm=drive_by[n].get(z,0); far=z in far_by[n]
