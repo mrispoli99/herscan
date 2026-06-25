@@ -1,0 +1,13 @@
+# Secrets — never commit these
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local scratch
+*.xlsx
+chi.csv
+integrate.py
